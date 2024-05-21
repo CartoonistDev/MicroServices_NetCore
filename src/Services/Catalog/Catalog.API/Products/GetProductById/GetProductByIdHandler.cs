@@ -7,8 +7,17 @@ internal class GetProductByIdQueryHandler
     (IDocumentSession session, ILogger<GetProductByIdQueryHandler> logger)
     : IQueryHandler<GetProductByIdQuery, GetProductByIdResult>
 {
-    public Task<GetProductByIdResult> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
+    public async Task<GetProductByIdResult> Handle(GetProductByIdQuery query, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        logger.LogInformation("GetProductByIdQueryHandler.Handle called with {@Query}", query);
+
+        var product = await session.LoadAsync<Product>(query.id, cancellationToken);
+
+        if(product == null)
+        {
+            throw new ProductNotFoundException();
+        }
+
+        return new GetProductByIdResult(product);
     }
 }
