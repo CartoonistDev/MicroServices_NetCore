@@ -25,7 +25,6 @@
     <Folder Include="Controllers\" />
     <Folder Include="Data\" />
     <Folder Include="Exception\" />
-    <Folder Include="Products\DeleteProduct\" />
   </ItemGroup>
 
   <ItemGroup>
