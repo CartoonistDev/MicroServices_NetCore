@@ -1,26 +1,41 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+
+# Define the user 'app' and set the working directory
 USER app
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
 
+# Expose ports
+EXPOSE 8080
+
+# Use the .NET SDK image for the build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+# Define the build configuration argument
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy project files and restore dependencies
 COPY ["Services/Catalog/Catalog.API/Catalog.API.csproj", "Services/Catalog/Catalog.API/"]
 COPY ["BuildingBlocks/BuildingBlocks/BuildingBlocks.csproj", "BuildingBlocks/BuildingBlocks/"]
-RUN dotnet restore "./Services/Catalog/Catalog.API/./Catalog.API.csproj"
+RUN dotnet restore "./Services/Catalog/Catalog.API/Catalog.API.csproj"
+
+# Copy the remaining source code and build the project
 COPY . .
 WORKDIR "/src/Services/Catalog/Catalog.API"
 RUN dotnet build "./Catalog.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+# Publish the application
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Catalog.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+# Use the base image to create the final image
 FROM base AS final
 WORKDIR /app
+
+# Copy the published output from the publish stage
 COPY --from=publish /app/publish .
+# COPY aspnetapp.pfx /https/aspnetapp.pfx
+
+# Define the entrypoint
 ENTRYPOINT ["dotnet", "Catalog.API.dll"]
