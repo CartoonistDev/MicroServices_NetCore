@@ -1,6 +1,47 @@
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+var assembly = typeof(Program).Assembly;
+var posgresDB = builder.Configuration.GetConnectionString("Database");
+
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(assembly);
+    config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    config.AddOpenBehavior(typeof(LoggingBehavior<,>));
+});
+builder.Services.AddValidatorsFromAssembly(assembly);
+
+builder.Services.AddCarter();
+
+builder.Services.AddMarten(options =>
+{
+    options.Connection(connectionString: posgresDB);
+}).UseLightweightSessions();
+
+//if (builder.Environment.IsDevelopment())
+//{
+//    builder.Services.InitializeMartenWith<BasketInitialData>();
+//}
+
+builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+
+builder.Services.AddHealthChecks()
+    .AddNpgSql(posgresDB);
+
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+// Configure the HTTP request pipeline.
+
+app.MapCarter();
+
+app.UseExceptionHandler(option => { });
+
+app.UseHealthChecks("/health",
+    new HealthCheckOptions
+    {
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
 
 app.Run();
